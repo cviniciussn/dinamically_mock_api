@@ -1,17 +1,18 @@
 const express = require('express');
 const { query } = require('../db');
 
-let currentRouter = null;
+const mockRouter = express.Router();
 
 async function buildRouter() {
-  const router = express.Router();
+  mockRouter.stack = [];
+
   const { rows } = await query('SELECT * FROM mock_routes ORDER BY id');
 
   for (const route of rows) {
     const method = route.method.toLowerCase();
-    if (!router[method]) continue;
+    if (!mockRouter[method]) continue;
 
-    router[method](route.path, (req, res) => {
+    mockRouter[method](route.path, (req, res) => {
       const send = () => {
         res.status(route.status_code);
         res.set('Content-Type', route.content_type);
@@ -34,14 +35,8 @@ async function buildRouter() {
     });
   }
 
-  currentRouter = router;
   console.log(`Mock router rebuilt with ${rows.length} route(s).`);
-  return router;
+  return mockRouter;
 }
 
-function mockMiddleware(req, res, next) {
-  if (!currentRouter) return next();
-  currentRouter(req, res, next);
-}
-
-module.exports = { buildRouter, mockMiddleware };
+module.exports = { buildRouter, mockRouter };

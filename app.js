@@ -8,7 +8,7 @@ const path = require('path');
 const cors = require('cors');
 const { waitForConnection } = require('./src/db');
 const { migrate } = require('./src/migrate');
-const { buildRouter, mockMiddleware } = require('./src/routes/mock');
+const { buildRouter, mockRouter } = require('./src/routes/mock');
 const adminRoutes = require('./src/routes/admin');
 
 const app = express();
@@ -24,7 +24,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use('/admin', adminRoutes);
 
-app.use(mockMiddleware);
+app.use(mockRouter);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'No mock route matches this request.', method: req.method, path: req.path });

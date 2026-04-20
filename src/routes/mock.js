@@ -12,10 +12,13 @@ async function buildRouter() {
   const skipped = [];
 
   for (const route of rows) {
-    const method = route.method.toLowerCase();
-    if (!mockRouter[method]) continue;
-
     try {
+      const method = String(route.method || '').toLowerCase();
+      if (typeof mockRouter[method] !== 'function') {
+        skipped.push({ route, reason: `Unsupported method: ${route.method}` });
+        continue;
+      }
+
       mockRouter[method](route.path, (req, res) => {
         const send = () => {
           res.status(route.status_code);

@@ -4,6 +4,21 @@ const { buildRouter } = require('./mock');
 
 const router = express.Router();
 
+function validateMockPath(path) {
+  if (typeof path !== 'string' || path.trim() === '') {
+    return 'Path is required.';
+  }
+  if (!path.startsWith('/')) {
+    return 'Path must start with "/" (e.g., /api/users). Do not include protocol or hostname.';
+  }
+  try {
+    express.Router().get(path, () => {});
+  } catch (err) {
+    return `Invalid path: ${err.message}`;
+  }
+  return null;
+}
+
 router.get('/', async (req, res) => {
   const { rows } = await query('SELECT * FROM mock_routes ORDER BY id DESC');
   res.render('index', { routes: rows, success: req.query.success, error: req.query.error });
@@ -15,6 +30,11 @@ router.get('/new', (req, res) => {
 
 router.post('/routes', async (req, res) => {
   const { method, path, status_code, response_body, content_type, delay_ms, description } = req.body;
+
+  const pathError = validateMockPath(path);
+  if (pathError) {
+    return res.render('form', { route: req.body, error: pathError });
+  }
 
   try {
     JSON.parse(response_body);
@@ -56,6 +76,11 @@ router.post('/routes/:id', async (req, res) => {
     await query('DELETE FROM mock_routes WHERE id = $1', [req.params.id]);
     await buildRouter();
     return res.redirect('/admin?success=Route+deleted');
+  }
+
+  const pathError = validateMockPath(path);
+  if (pathError) {
+    return res.render('form', { route: { ...req.body, id: req.params.id }, error: pathError });
   }
 
   try {
